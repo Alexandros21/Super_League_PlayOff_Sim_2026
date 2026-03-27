@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play Off 2026 - Scenario Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-1: #1f2a44;
+      --bg-2: #111827;
+      --bg-3: #0b1220;
+      --card-bg: rgba(17, 24, 39, 0.92);
+      --card-border: rgba(148, 163, 184, 0.18);
+      --text-main: #e5e7eb;
+      --text-soft: #94a3b8;
+      --text-strong: #f9fafb;
+      --blue-soft: #bfdbfe;
+      --blue-strong: #93c5fd;
+      --green-soft: #bbf7d0;
+      --gold-soft: #fde68a;
+      --danger-soft: #fecaca;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      font-family: Inter, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, var(--bg-1) 0%, var(--bg-2) 40%, var(--bg-3) 100%);
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 18px 0;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--text-strong);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #f3f4f6;
+    }
+
+    h3 {
+      margin: 0 0 10px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f3f4f6;
+    }
+
+    .app-shell {
+      max-width: 1450px;
+      margin: 0 auto;
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 0.92fr 1.28fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .left-column,
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+
+    th {
+      background: #182235;
+      color: #dbeafe;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    td {
+      padding: 10px 8px;
+      text-align: center;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.015);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    tr.leader-row td {
+      background: rgba(34, 197, 94, 0.09);
+    }
+
+    .leader-row:hover td {
+      background: rgba(34, 197, 94, 0.14);
+    }
+
+    .team-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #ffffff;
+      flex-wrap: wrap;
+    }
+
+    .team-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.06);
+    }
+
+    .team-name-colored {
+      font-weight: 800;
+    }
+
+    .leader-badge,
+    .status-badge,
+    .crown-badge,
+    .criteria-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .leader-badge {
+      background: rgba(34, 197, 94, 0.16);
+      color: var(--green-soft);
+    }
+
+    .crown-badge {
+      background: rgba(250, 204, 21, 0.16);
+      color: var(--gold-soft);
+    }
+
+    .criteria-badge {
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--blue-soft);
+    }
+
+    .status-badge.clinched {
+      background: rgba(34, 197, 94, 0.16);
+      color: var(--green-soft);
+    }
+
+    .status-badge.eliminated {
+      background: rgba(239, 68, 68, 0.16);
+      color: var(--danger-soft);
+    }
+
+    .status-badge.live {
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--blue-soft);
+    }
+
+    .odds-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      min-width: 180px;
+    }
+
+    .odds-bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .odds-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #3b82f6);
+    }
+
+    .odds-text {
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .odds-value {
+      color: #dbeafe;
+      font-weight: 700;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .summary-box {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .summary-stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .summary-stat:last-child {
+      border-bottom: none;
+    }
+
+    .summary-label {
+      color: #9ca3af;
+    }
+
+    .summary-value {
+      font-weight: 700;
+      color: var(--text-strong);
+    }
+
+    .muted {
+      margin-top: 10px;
+      color: var(--text-soft);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .prob-row {
+      display: grid;
+      grid-template-columns: 155px 1fr 86px;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .prob-row:last-child {
+      border-bottom: none;
+    }
+
+    .prob-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .prob-team-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .prob-team {
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .prob-titles {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .prob-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.16);
+      overflow: hidden;
+    }
+
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, #3b82f6);
+    }
+
+    .prob-right {
+      font-weight: 700;
+      color: var(--blue-strong);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .preview-table td,
+    .preview-table th,
+    .tie-table td,
+    .tie-table th {
+      padding: 9px 8px;
+    }
+
+    .small-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .list-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .list-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .list-row:last-child {
+      border-bottom: none;
+    }
+
+    .matchday-block {
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .matchday-title {
+      padding: 11px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-strong);
+      background: linear-gradient(90deg, rgba(30,41,59,0.9), rgba(30,64,175,0.35));
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .match-cell {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .home-away {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .team-tag {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .home-tag {
+      background: rgba(34, 197, 94, 0.14);
+      color: var(--green-soft);
+    }
+
+    .away-tag {
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--blue-soft);
+    }
+
+    .vs-text {
+      color: var(--text-soft);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    select {
+      width: 64px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: #0f172a;
+      color: var(--text-strong);
+      font-size: 12px;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:hover,
+    select:focus {
+      border-color: rgba(96, 165, 250, 0.7);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .score-input {
+      width: 78px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: #0f172a;
+      color: var(--text-strong);
+      font-size: 12px;
+      font-weight: 700;
+      outline: none;
+      text-align: center;
+    }
+
+    .score-input::placeholder {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .score-input:hover,
+    .score-input:focus {
+      border-color: rgba(96, 165, 250, 0.7);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .score-input.invalid {
+      border-color: rgba(239, 68, 68, 0.9);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+    }
+
+    .score-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 10px;
+      color: #fca5a5;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .button-secondary {
+      background: linear-gradient(135deg, #475569, #334155);
+      box-shadow: 0 8px 18px rgba(51, 65, 85, 0.28);
+    }
+
+    .mini-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--blue-soft);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .remaining-badge {
+      background: rgba(34, 197, 94, 0.14);
+      color: var(--green-soft);
+    }
+
+    .explain-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .explain-item {
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      line-height: 1.45;
+      font-size: 12px;
+    }
+
+    .text-left {
+      text-align: left;
+    }
+
+    details summary {
+      cursor: pointer;
+      color: var(--text-strong);
+      user-select: none;
+    }
+
+    details summary:hover {
+      color: var(--blue-soft);
+    }
+
+    .explain-item details {
+      border-radius: 10px;
+    }
+
+    .collapse-summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 700;
+      padding: 2px 0;
+    }
+
+    .collapse-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .collapse-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .collapse-arrow {
+      display: inline-flex;
+      width: 22px;
+      height: 22px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.16);
+      color: var(--blue-soft);
+      font-size: 12px;
+      transition: transform 0.18s ease;
+      flex: 0 0 auto;
+    }
+
+    details[open] .collapse-arrow {
+      transform: rotate(90deg);
+    }
+
+    .collapse-content {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+
+    .insight-banner {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .insight-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .insight-card .eyebrow {
+      color: var(--text-soft);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .insight-card .hero {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-strong);
+      margin-bottom: 6px;
+    }
+
+    .insight-card .sub {
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .section-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tie-status-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      flex-wrap: wrap;
+    }
+
+    .tie-status-row:last-child { border-bottom: none; }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .status-chip.resolved { background: rgba(34, 197, 94, 0.16); color: var(--green-soft); }
+    .status-chip.partial { background: rgba(59, 130, 246, 0.14); color: var(--blue-soft); }
+    .status-chip.unresolved { background: rgba(239, 68, 68, 0.16); color: var(--danger-soft); }
+
+    .criterion-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .criterion-step {
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.02);
+      line-height: 1.45;
+    }
+
+    .criterion-title {
+      font-weight: 700;
+      color: var(--text-strong);
+      margin-bottom: 4px;
+    }
+
+    .criteria-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .criteria-pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.14);
+      color: var(--text-main);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .active-tie-box {
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .mono { font-variant-numeric: tabular-nums; }
+
+    @media (max-width: 1000px) {
+      .main-layout,
+      .small-grid,
+      .insight-banner {
+        grid-template-columns: 1fr;
+      }
+
+      .prob-row {
+        grid-template-columns: 1fr;
+      }
+
+      .prob-right {
+        text-align: left;
+      }
+
+      .odds-wrap {
+        min-width: 120px;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+        padding: 0;
+      }
+
+      .card {
+        background: white;
+        color: black;
+        box-shadow: none;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <h1>Play Off 2026 - Scenario Simulator</h1>
+
+    <div class="insight-banner">
+      <div class="insight-card">
+        <div class="eyebrow">How to read it</div>
+        <div class="hero">Scenario-based title chances</div>
+        <div class="sub">Το app εξετάζει όλα τα εναπομείναντα αποτελέσματα. Με scores λύνει και τα goal-based tie-breaks. Χωρίς αρκετά scores, δείχνει confirmed–max range.</div>
+      </div>
+      <div class="insight-card">
+        <div class="eyebrow">Tie-break engine</div>
+        <div class="hero">Step-by-step resolver</div>
+        <div class="sub">Οι ισοβαθμίες λύνονται ανά tied group, με subgroups όταν χρειάζεται, όχι με ένα απλό global sort.</div>
+      </div>
+      <div class="insight-card">
+        <div class="eyebrow">Input</div>
+        <div class="hero">Result first, score optional</div>
+        <div class="sub">Το αποτέλεσμα αρκεί για τους βαθμούς. Το score ενεργοποιεί goal difference, goals scored και τα υπόλοιπα goal criteria στα μεταξύ τους.</div>
+      </div>
+    </div>
+
+    <div class="main-layout">
+      <div class="left-column">
+        <div class="card">
+          <div class="card-header">
+            <h2>Teams Table</h2>
+            <span class="mini-badge">Current table</span>
+          </div>
+
+          <table id="teamsTable">
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Start Pts</th>
+                <th>Current</th>
+                <th>W</th>
+                <th>D</th>
+                <th>L</th>
+                <th>Title Chance</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Scenario Summary</h2>
+            <span class="mini-badge">Scenario-based</span>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-box">
+              <div class="summary-stat">
+                <span class="summary-label">Total scenarios</span>
+                <span class="summary-value" id="totalScenarios">-</span>
+              </div>
+              <div class="summary-stat">
+                <span class="summary-label">Resolved by table only</span>
+                <span class="summary-value" id="resolvedByTable">-</span>
+              </div>
+              <div class="summary-stat">
+                <span class="summary-label">Resolved by tie-break engine</span>
+                <span class="summary-value" id="resolvedByCriteria">-</span>
+              </div>
+              <div class="summary-stat">
+                <span class="summary-label">Shared-title scenarios</span>
+                <span class="summary-value" id="tieScenarios">-</span>
+              </div>
+              <div class="summary-stat">
+                <span class="summary-label">Remaining matches</span>
+                <span class="summary-value" id="remainingMatches">-</span>
+              </div>
+              <p class="muted">
+                Τα ποσοστά δείχνουν το μερίδιο όλων των εναπομείναντων σεναρίων. Όταν λείπουν γκολ για tie-break,
+                εμφανίζεται εύρος: <strong>confirmed – max possible</strong>.
+              </p>
+            </div>
+
+            <div class="summary-box">
+              <h3>Scenario-based Title Chances</h3>
+              <div id="probabilitiesList"></div>
+            </div>
+
+            <div class="summary-box">
+              <h3>Points Range Preview</h3>
+              <table class="preview-table" id="pointsRangeTable">
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Current</th>
+                    <th>Min Final</th>
+                    <th>Max Final</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="muted" id="currentLeaderText"></p>
+            </div>
+
+            <div class="summary-box">
+              <h3>Status & Remaining Fixtures</h3>
+              <div class="small-grid">
+                <div>
+                  <h3 style="margin-top:0;">Title Status</h3>
+                  <div class="list-box" id="statusList"></div>
+                </div>
+                <div>
+                  <h3 style="margin-top:0;">Remaining Matches Per Team</h3>
+                  <div class="list-box" id="remainingFixturesList"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <h3>Head-to-Head Input Summary</h3>
+              <table id="headToHeadTable">
+                <thead>
+                  <tr>
+                    <th>Pair</th>
+                    <th>Regular Season</th>
+                    <th>Playoffs</th>
+                    <th>All H2H Matches</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="muted">
+                Περιλαμβάνονται όλοι οι μεταξύ τους αγώνες, μαζί με την κανονική περίοδο. Invalid playoff scores are ignored in goal-based tie-break calculations.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-column">
+        <div class="card">
+          <div class="card-header">
+            <h2>Matches Table</h2>
+            <span class="mini-badge">6 matchdays</span>
+            <span class="mini-badge remaining-badge" id="remainingMatchesBadge">Remaining: -</span>
+          </div>
+
+          <div id="matchdaysContainer"></div>
+
+          <p class="muted">
+            Το score είναι προαιρετικό και χρησιμοποιείται μόνο στα goal-based tie-break criteria. Example format: 2-1
+          </p>
+
+          <div class="actions">
+            <button id="fillDrawsBtn" class="button-secondary">Fill Remaining As Draws</button>
+            <button id="exportPdfBtn" class="button-secondary">Export PDF</button>
+            <button id="resetBtn">Reset All Results</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Isobathmies</h2>
+            <span class="mini-badge">Focused tie-break view</span>
+          </div>
+
+          <div class="section-stack">
+            <div class="summary-box">
+              <h3>Active Top-Tie Status</h3>
+              <div id="activeTopTiePanel"></div>
+            </div>
+
+            <div class="summary-box">
+              <h3>Double Tie Explanations</h3>
+              <div id="doubleTieExplanations" class="explain-list"></div>
+            </div>
+
+            <div class="summary-box">
+              <h3>Triple Tie Explanations</h3>
+              <div id="tripleTieExplanations" class="explain-list"></div>
+            </div>
+
+            <div class="summary-box">
+              <h3>All-Teams H2H Reference</h3>
+              <table class="tie-table" id="tieBreakTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>H2H Pts</th>
+                    <th>GF</th>
+                    <th>GA</th>
+                    <th>GD</th>
+                    <th>Reg. Pos</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="muted">
+                Reference mini-league για όλες τις ομάδες μαζί. Χρήσιμο για context, όχι ως direct resolver όταν η ισοβαθμία αφορά μικρότερο subgroup.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    const teams = [
+      { name: "AEK", startPoints: 60, regularSeasonPos: 1 },
+      { name: "OSFP", startPoints: 58, regularSeasonPos: 2 },
+      { name: "PAOK", startPoints: 57, regularSeasonPos: 3 },
+      { name: "PAO", startPoints: 49, regularSeasonPos: 4 }
+    ];
+
+    const teamColors = {
+      AEK: "#facc15",
+      OSFP: "#ef4444",
+      PAOK: "#e5e7eb",
+      PAO: "#22c55e"
+    };
+
+    const matchdays = [
+      { round: 1, matches: [ { home: "OSFP", away: "AEK", result: null, score: "" }, { home: "PAOK", away: "PAO", result: null, score: "" } ] },
+      { round: 2, matches: [ { home: "AEK", away: "PAOK", result: null, score: "" }, { home: "PAO", away: "OSFP", result: null, score: "" } ] },
+      { round: 3, matches: [ { home: "PAO", away: "AEK", result: null, score: "" }, { home: "PAOK", away: "OSFP", result: null, score: "" } ] },
+      { round: 4, matches: [ { home: "AEK", away: "PAO", result: null, score: "" }, { home: "OSFP", away: "PAOK", result: null, score: "" } ] },
+      { round: 5, matches: [ { home: "OSFP", away: "PAO", result: null, score: "" }, { home: "PAOK", away: "AEK", result: null, score: "" } ] },
+      { round: 6, matches: [ { home: "AEK", away: "OSFP", result: null, score: "" }, { home: "PAO", away: "PAOK", result: null, score: "" } ] }
+    ];
+
+    const regularSeasonMatches = [
+      { home: "OSFP", away: "AEK", homeGoals: 2, awayGoals: 0 },
+      { home: "AEK", away: "OSFP", homeGoals: 1, awayGoals: 1 },
+      { home: "AEK", away: "PAOK", homeGoals: 0, awayGoals: 2 },
+      { home: "PAOK", away: "AEK", homeGoals: 0, awayGoals: 0 },
+      { home: "PAO", away: "AEK", homeGoals: 2, awayGoals: 3 },
+      { home: "AEK", away: "PAO", homeGoals: 4, awayGoals: 0 },
+      { home: "PAOK", away: "OSFP", homeGoals: 2, awayGoals: 1 },
+      { home: "OSFP", away: "PAOK", homeGoals: 0, awayGoals: 0 },
+      { home: "PAO", away: "OSFP", homeGoals: 1, awayGoals: 1 },
+      { home: "OSFP", away: "PAO", homeGoals: 0, awayGoals: 1 },
+      { home: "PAO", away: "PAOK", homeGoals: 2, awayGoals: 1 },
+      { home: "PAOK", away: "PAO", homeGoals: 2, awayGoals: 0 }
+    ];
+
+    const regularSeasonPosition = teams.reduce((acc, team) => {
+      acc[team.name] = team.regularSeasonPos;
+      return acc;
+    }, {});
+
+    const TIEBREAK_CRITERIA = [
+      { key: "pts", label: "head-to-head points", requiresGoals: false, higherIsBetter: true },
+      { key: "gd", label: "head-to-head goal difference", requiresGoals: true, higherIsBetter: true },
+      { key: "gf", label: "goals scored in head-to-head", requiresGoals: true, higherIsBetter: true },
+      { key: "ga", label: "goals conceded in head-to-head", requiresGoals: true, higherIsBetter: false },
+      { key: "regPos", label: "regular season position", requiresGoals: false, higherIsBetter: false }
+    ];
+
+    function getAllMatches() {
+      return matchdays.flatMap(md => md.matches);
+    }
+
+    function cloneStandings(teamList) {
+      const table = {};
+      for (const team of teamList) table[team.name] = team.startPoints;
+      return table;
+    }
+
+    function applyResult(table, match, result) {
+      if (result === "1") table[match.home] += 3;
+      else if (result === "X") {
+        table[match.home] += 1;
+        table[match.away] += 1;
+      } else if (result === "2") table[match.away] += 3;
+    }
+
+    function getCurrentPoints(teamList, matches) {
+      const table = cloneStandings(teamList);
+      for (const match of matches) {
+        if (["1", "X", "2"].includes(match.result)) applyResult(table, match, match.result);
+      }
+      return table;
+    }
+
+    function getConfirmedRecord(matches, teamName) {
+      return matches.reduce((record, match) => {
+        if (!["1", "X", "2"].includes(match.result)) return record;
+        const isHome = match.home === teamName;
+        const isAway = match.away === teamName;
+        if (!isHome && !isAway) return record;
+
+        if (match.result === "X") record.draws += 1;
+        else if ((match.result === "1" && isHome) || (match.result === "2" && isAway)) record.wins += 1;
+        else record.losses += 1;
+        return record;
+      }, { wins: 0, draws: 0, losses: 0 });
+    }
+
+    function getLeaders(table) {
+      const entries = Object.entries(table);
+      const maxPoints = Math.max(...entries.map(([_, pts]) => pts));
+      return entries.filter(([_, pts]) => pts === maxPoints).map(([name]) => name);
+    }
+
+    function parseScore(score) {
+      if (!score) return null;
+      const m = score.trim().match(/^(\d+)\s*-\s*(\d+)$/);
+      if (!m) return null;
+      return { homeGoals: Number(m[1]), awayGoals: Number(m[2]) };
+    }
+
+    function isScoreValid(score) {
+      if (!score || !score.trim()) return true;
+      return /^(\d+)\s*-\s*(\d+)$/.test(score.trim());
+    }
+
+    function doesScoreMatchResult(score, result) {
+      if (!score || !score.trim()) return true;
+      const parsed = parseScore(score);
+      if (!parsed) return false;
+      if (!result) return true;
+      if (result === "1") return parsed.homeGoals > parsed.awayGoals;
+      if (result === "X") return parsed.homeGoals === parsed.awayGoals;
+      if (result === "2") return parsed.awayGoals > parsed.homeGoals;
+      return true;
+    }
+
+    function getScoreValidity(match) {
+      const formatOk = isScoreValid(match.score || "");
+      const resultOk = doesScoreMatchResult(match.score || "", match.result);
+      const hasUsableScore = !!(match.score && match.score.trim() && formatOk && resultOk);
+      return { formatOk, resultOk, hasUsableScore };
+    }
+
+    function getMatchPointsFromResult(result) {
+      if (result === "1") return { home: 3, away: 0 };
+      if (result === "X") return { home: 1, away: 1 };
+      if (result === "2") return { home: 0, away: 3 };
+      return { home: 0, away: 0 };
+    }
+
+    function getRegularResultFromGoals(homeGoals, awayGoals) {
+      if (homeGoals > awayGoals) return "1";
+      if (homeGoals === awayGoals) return "X";
+      return "2";
+    }
+
+    function buildTieBreakStatsProgressive(teamSubset, scenarioMatches = getAllMatches()) {
+      const subset = new Set(teamSubset);
+      const stats = {};
+
+      for (const team of teamSubset) {
+        stats[team] = {
+          name: team,
+          pts: 0,
+          gf: 0,
+          ga: 0,
+          gd: 0,
+          regPos: regularSeasonPosition[team],
+          pointsDataAvailable: true,
+          goalDataAvailable: true,
+          missingGoalMatches: []
+        };
+      }
+
+      const regularRelevant = regularSeasonMatches.filter(m => subset.has(m.home) && subset.has(m.away));
+      for (const match of regularRelevant) {
+        const result = getRegularResultFromGoals(match.homeGoals, match.awayGoals);
+        const pts = getMatchPointsFromResult(result);
+        stats[match.home].pts += pts.home;
+        stats[match.away].pts += pts.away;
+        stats[match.home].gf += match.homeGoals;
+        stats[match.home].ga += match.awayGoals;
+        stats[match.away].gf += match.awayGoals;
+        stats[match.away].ga += match.homeGoals;
+      }
+
+      const playoffRelevant = scenarioMatches.filter(m => subset.has(m.home) && subset.has(m.away) && ["1", "X", "2"].includes(m.result));
+      for (const match of playoffRelevant) {
+        const pts = getMatchPointsFromResult(match.result);
+        stats[match.home].pts += pts.home;
+        stats[match.away].pts += pts.away;
+
+        const parsed = parseScore(match.score || "");
+        const validity = getScoreValidity(match);
+        if (validity.hasUsableScore && parsed) {
+          stats[match.home].gf += parsed.homeGoals;
+          stats[match.home].ga += parsed.awayGoals;
+          stats[match.away].gf += parsed.awayGoals;
+          stats[match.away].ga += parsed.homeGoals;
+        } else {
+          stats[match.home].goalDataAvailable = false;
+          stats[match.away].goalDataAvailable = false;
+          stats[match.home].missingGoalMatches.push(`${match.home}-${match.away}`);
+          stats[match.away].missingGoalMatches.push(`${match.home}-${match.away}`);
+        }
+      }
+
+      for (const team of teamSubset) stats[team].gd = stats[team].gf - stats[team].ga;
+      return stats;
+    }
+
+    function formatCriterionValue(teamName, stats) {
+      return `${teamName}: ${stats.pts} pts, GD ${stats.gd}, GF ${stats.gf}, GA ${stats.ga}, Reg ${stats.regPos}`;
+    }
+
+    function getCriterionValue(teamStats, criterion) {
+      return teamStats[criterion.key];
+    }
+
+    function compareCriterionValues(a, b, criterion) {
+      return criterion.higherIsBetter ? b - a : a - b;
+    }
+
+    function resolveTieGroup(teamSubset, scenarioMatches = getAllMatches()) {
+      const stats = buildTieBreakStatsProgressive(teamSubset, scenarioMatches);
+      const steps = [];
+      const ordered = [];
+      let decisiveCriterion = null;
+      let unresolved = false;
+      const initialGroup = [...teamSubset];
+
+      function resolveGroup(group, criterionIndex) {
+        if (group.length <= 1) {
+          ordered.push(...group);
+          return;
+        }
+
+        if (criterionIndex >= TIEBREAK_CRITERIA.length) {
+          unresolved = true;
+          ordered.push(...group);
+          steps.push({
+            criterion: "no decisive criterion",
+            status: "unresolved",
+            group: [...group],
+            message: `Still tied: ${group.join(", ")}`,
+            values: group.map(team => formatCriterionValue(team, stats[team]))
+          });
+          return;
+        }
+
+        const criterion = TIEBREAK_CRITERIA[criterionIndex];
+        if (criterion.requiresGoals && group.some(team => !stats[team].goalDataAvailable)) {
+          unresolved = true;
+          ordered.push(...group);
+          steps.push({
+            criterion: criterion.label,
+            status: "unresolved",
+            group: [...group],
+            message: `Need valid scores to evaluate ${criterion.label} for ${group.join(", ")}.`,
+            values: group.map(team => formatCriterionValue(team, stats[team]))
+          });
+          return;
+        }
+
+        const sorted = [...group].sort((a, b) => {
+          const cmp = compareCriterionValues(getCriterionValue(stats[a], criterion), getCriterionValue(stats[b], criterion), criterion);
+          return cmp || stats[a].regPos - stats[b].regPos || a.localeCompare(b);
+        });
+
+        const buckets = [];
+        for (const team of sorted) {
+          const value = getCriterionValue(stats[team], criterion);
+          const last = buckets[buckets.length - 1];
+          if (!last || last.value !== value) buckets.push({ value, teams: [team] });
+          else last.teams.push(team);
+        }
+
+        const separated = buckets.length > 1;
+        if (separated && !decisiveCriterion) decisiveCriterion = criterion.label;
+
+        steps.push({
+          criterion: criterion.label,
+          status: separated ? "resolved" : "partial",
+          group: [...group],
+          message: separated
+            ? `${criterion.label} separates ${group.join(", ")}.`
+            : `${criterion.label} leaves ${group.join(", ")} level.`,
+          values: sorted.map(team => `${team}: ${getCriterionValue(stats[team], criterion)}`)
+        });
+
+        for (const bucket of buckets) {
+          if (bucket.teams.length === 1) ordered.push(bucket.teams[0]);
+          else resolveGroup(bucket.teams, criterionIndex + 1);
+        }
+      }
+
+      resolveGroup(initialGroup, 0);
+
+      const orderedUnique = [];
+      for (const team of ordered) if (!orderedUnique.includes(team)) orderedUnique.push(team);
+
+      let status = "resolved";
+      if (unresolved) status = "unresolved";
+      else if (steps.some(step => step.status === "partial")) status = "partial";
+
+      return {
+        ordered: orderedUnique,
+        stats,
+        status,
+        decisiveCriterion,
+        steps,
+        winner: orderedUnique[0] || null,
+        resolved: status !== "unresolved"
+      };
+    }
+
+    function calculateProbabilities(teamList, matches) {
+      const baseMatches = matches.map(match => ({ home: match.home, away: match.away, result: match.result, score: match.score || "" }));
+      const baseTable = cloneStandings(teamList);
+      const remainingMatches = [];
+
+      for (const match of baseMatches) {
+        if (["1", "X", "2"].includes(match.result)) applyResult(baseTable, match, match.result);
+        else remainingMatches.push(match);
+      }
+
+      const titleCounts = {};
+      const possibleTieCounts = {};
+      for (const team of teamList) {
+        titleCounts[team.name] = 0;
+        possibleTieCounts[team.name] = 0;
+      }
+
+      let totalScenarios = 0;
+      let tieScenarios = 0;
+      let resolvedByTable = 0;
+      let resolvedByCriteria = 0;
+
+      function simulate(index, currentTable, scenarioMatches) {
+        if (index === remainingMatches.length) {
+          totalScenarios++;
+          const leaders = getLeaders(currentTable);
+
+          if (leaders.length === 1) {
+            titleCounts[leaders[0]]++;
+            resolvedByTable++;
+          } else {
+            const resolution = resolveTieGroup(leaders, scenarioMatches);
+            if (resolution.resolved && resolution.winner) {
+              titleCounts[resolution.winner]++;
+              resolvedByCriteria++;
+            } else {
+              tieScenarios++;
+              for (const teamName of leaders) possibleTieCounts[teamName]++;
+            }
+          }
+          return;
+        }
+
+        const match = remainingMatches[index];
+        for (const result of ["1", "X", "2"]) {
+          const nextTable = { ...currentTable };
+          applyResult(nextTable, match, result);
+
+          const nextScenarioMatches = scenarioMatches.map(m => ({ ...m }));
+          const target = nextScenarioMatches.find(m => m.home === match.home && m.away === match.away);
+          if (target) target.result = result;
+
+          simulate(index + 1, nextTable, nextScenarioMatches);
+        }
+      }
+
+      simulate(0, baseTable, baseMatches);
+
+      const probabilities = {};
+      for (const team of teamList) {
+        const confirmedTitles = titleCounts[team.name];
+        const potentialExtraTitles = possibleTieCounts[team.name];
+        probabilities[team.name] = {
+          titles: confirmedTitles,
+          possibleTieTitles: potentialExtraTitles,
+          lowerProbability: totalScenarios === 0 ? 0 : (confirmedTitles / totalScenarios) * 100,
+          upperProbability: totalScenarios === 0 ? 0 : ((confirmedTitles + potentialExtraTitles) / totalScenarios) * 100
+        };
+      }
+
+      return { totalScenarios, tieScenarios, resolvedByTable, resolvedByCriteria, probabilities };
+    }
+
+    function getRemainingMatchesCount(matches) {
+      return matches.filter(match => !["1", "X", "2"].includes(match.result)).length;
+    }
+
+    function getPointsRange(teamList, matches) {
+      const currentPoints = getCurrentPoints(teamList, matches);
+      const remainingPerTeam = Object.fromEntries(teamList.map(team => [team.name, 0]));
+      for (const match of matches) {
+        if (!["1", "X", "2"].includes(match.result)) {
+          remainingPerTeam[match.home] += 1;
+          remainingPerTeam[match.away] += 1;
+        }
+      }
+      return teamList.map(team => ({
+        name: team.name,
+        current: currentPoints[team.name],
+        min: currentPoints[team.name],
+        max: currentPoints[team.name] + remainingPerTeam[team.name] * 3
+      }));
+    }
+
+    function getRemainingFixturesPerTeam(matches) {
+      const result = Object.fromEntries(teams.map(team => [team.name, 0]));
+      for (const match of matches) {
+        if (!["1", "X", "2"].includes(match.result)) {
+          result[match.home]++;
+          result[match.away]++;
+        }
+      }
+      return result;
+    }
+
+    function getTitleStatus(matches) {
+      const ranges = getPointsRange(teams, matches);
+      const maxCurrent = Math.max(...ranges.map(t => t.current));
+      const highestMin = Math.max(...ranges.map(t => t.min));
+      const highestCurrentTeams = ranges.filter(t => t.current === maxCurrent).map(t => t.name);
+
+      return ranges.map(team => {
+        const others = ranges.filter(t => t.name !== team.name);
+        const bestOtherMax = Math.max(...others.map(t => t.max));
+        let status = "live";
+        if (team.min > bestOtherMax) status = "clinched";
+        else if (team.max < highestMin || (team.max < maxCurrent && !highestCurrentTeams.includes(team.name))) status = "eliminated";
+        return { name: team.name, status };
+      });
+    }
+
+    function formatRegularSeasonMatch(match) {
+      return `${match.home}-${match.away}: ${match.homeGoals}-${match.awayGoals}`;
+    }
+
+    function formatPlayoffMatchSummary(match) {
+      const label = `${match.home}-${match.away}`;
+      if (!["1", "X", "2"].includes(match.result)) return `${label}: not entered`;
+      const validity = getScoreValidity(match);
+      if (match.score && match.score.trim()) {
+        if (validity.hasUsableScore) return `${label}: ${match.result} (${match.score.trim()})`;
+        return `${label}: ${match.result} (invalid score ignored)`;
+      }
+      return `${label}: ${match.result}`;
+    }
+
+    function getHeadToHeadSummary(matches) {
+      const pairs = [["AEK", "OSFP"], ["AEK", "PAOK"], ["AEK", "PAO"], ["OSFP", "PAOK"], ["OSFP", "PAO"], ["PAOK", "PAO"]];
+      return pairs.map(([a, b]) => {
+        const regular = regularSeasonMatches.filter(match => (match.home === a && match.away === b) || (match.home === b && match.away === a));
+        const playoffs = matches.filter(match => (match.home === a && match.away === b) || (match.home === b && match.away === a));
+
+        const regularText = regular.length ? regular.map(formatRegularSeasonMatch).join(" | ") : "-";
+        const playoffText = playoffs.length ? playoffs.map(formatPlayoffMatchSummary).join(" | ") : "-";
+        const allText = [...regular.map(formatRegularSeasonMatch), ...playoffs.map(formatPlayoffMatchSummary)].join(" | ");
+
+        return {
+          pair: `${a} vs ${b}`,
+          regularText,
+          playoffText,
+          allText
+        };
+      });
+    }
+
+    function renderTeamsTable() {
+      const tbody = document.querySelector("#teamsTable tbody");
+      tbody.innerHTML = "";
+      const matches = getAllMatches();
+      const currentPoints = getCurrentPoints(teams, matches);
+      const sim = calculateProbabilities(teams, matches);
+
+      const rows = teams.map(team => {
+        const record = getConfirmedRecord(matches, team.name);
+        return {
+          name: team.name,
+          initialPoints: team.startPoints,
+          currentPoints: currentPoints[team.name],
+          wins: record.wins,
+          draws: record.draws,
+          losses: record.losses,
+          lower: sim.probabilities[team.name].lowerProbability,
+          upper: sim.probabilities[team.name].upperProbability
+        };
+      }).sort((a, b) => b.currentPoints - a.currentPoints || a.name.localeCompare(b.name));
+
+      const leaderPoints = rows.length ? rows[0].currentPoints : null;
+      for (const row of rows) {
+        const tr = document.createElement("tr");
+        const isLeader = row.currentPoints === leaderPoints;
+        if (isLeader) tr.classList.add("leader-row");
+        tr.innerHTML = `
+          <td>
+            <div class="team-cell">
+              <span class="team-dot" style="background:${teamColors[row.name]}"></span>
+              <span class="team-name-colored" style="color:${teamColors[row.name]}">${row.name}</span>
+              ${isLeader ? '<span class="leader-badge">Leader</span>' : ''}
+            </div>
+          </td>
+          <td>${row.initialPoints}</td>
+          <td>${row.currentPoints}</td>
+          <td>${row.wins}</td>
+          <td>${row.draws}</td>
+          <td>${row.losses}</td>
+          <td>
+            <div class="odds-wrap">
+              <div class="odds-bar"><div class="odds-fill" style="width:${row.upper.toFixed(2)}%"></div></div>
+              <div class="odds-text"><span class="odds-value mono">${row.lower.toFixed(2)}% - ${row.upper.toFixed(2)}%</span></div>
+            </div>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function renderMatchdays() {
+      const container = document.getElementById("matchdaysContainer");
+      container.innerHTML = "";
+
+      matchdays.forEach((matchday, matchdayIndex) => {
+        const block = document.createElement("div");
+        block.className = "matchday-block";
+        const title = document.createElement("div");
+        title.className = "matchday-title";
+        title.textContent = `${matchday.round}η Αγωνιστική`;
+
+        const table = document.createElement("table");
+        table.innerHTML = `<thead><tr><th>#</th><th>Match</th><th>Result</th><th>Score</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector("tbody");
+
+        matchday.matches.forEach((match, matchIndex) => {
+          const tr = document.createElement("tr");
+          const select = document.createElement("select");
+          select.innerHTML = `<option value="">-</option><option value="1">1</option><option value="X">X</option><option value="2">2</option>`;
+          select.value = match.result || "";
+
+          const scoreInput = document.createElement("input");
+          scoreInput.type = "text";
+          scoreInput.placeholder = "e.g. 2-1";
+          scoreInput.value = match.score || "";
+          scoreInput.className = "score-input";
+          scoreInput.setAttribute("inputmode", "numeric");
+
+          const scoreWrapper = document.createElement("div");
+          const scoreHint = document.createElement("small");
+          scoreHint.className = "score-hint";
+
+          function refreshScoreState(rawValue) {
+            const trimmed = rawValue.trim();
+            const validFormat = isScoreValid(trimmed);
+            const validMatch = doesScoreMatchResult(trimmed, match.result);
+            scoreInput.classList.toggle("invalid", !(validFormat && validMatch));
+            if (!validFormat) scoreHint.textContent = "Use format like 2-1";
+            else if (!validMatch) scoreHint.textContent = "Score does not match selected result";
+            else scoreHint.textContent = "";
+          }
+
+          refreshScoreState(scoreInput.value);
+          select.addEventListener("change", e => {
+            matchdays[matchdayIndex].matches[matchIndex].result = e.target.value || null;
+            refreshScoreState(scoreInput.value);
+            updateAll();
+          });
+          scoreInput.addEventListener("input", e => {
+            let value = e.target.value.replace(/[^\d-\s]/g, "");
+            value = value.replace(/-{2,}/g, "-");
+            e.target.value = value;
+            matchdays[matchdayIndex].matches[matchIndex].score = value.trim();
+            refreshScoreState(value);
+            renderSummary();
+            renderTieBreakSection();
+          });
+
+          scoreWrapper.appendChild(scoreInput);
+          scoreWrapper.appendChild(scoreHint);
+
+          tr.innerHTML = `
+            <td>${matchIndex + 1}</td>
+            <td class="match-cell"><div class="home-away"><span class="team-tag home-tag">Home: ${match.home}</span><span class="vs-text">vs</span><span class="team-tag away-tag">Away: ${match.away}</span></div></td>
+            <td></td><td></td>`;
+          tr.children[2].appendChild(select);
+          tr.children[3].appendChild(scoreWrapper);
+          tbody.appendChild(tr);
+        });
+
+        block.appendChild(title);
+        block.appendChild(table);
+        container.appendChild(block);
+      });
+    }
+
+    function renderSummary() {
+      const matches = getAllMatches();
+      const sim = calculateProbabilities(teams, matches);
+      const remainingMatches = getRemainingMatchesCount(matches);
+      document.getElementById("totalScenarios").textContent = sim.totalScenarios.toLocaleString();
+      document.getElementById("resolvedByTable").textContent = sim.resolvedByTable.toLocaleString();
+      document.getElementById("resolvedByCriteria").textContent = sim.resolvedByCriteria.toLocaleString();
+      document.getElementById("tieScenarios").textContent = sim.tieScenarios.toLocaleString();
+      document.getElementById("remainingMatches").textContent = remainingMatches.toLocaleString();
+      document.getElementById("remainingMatchesBadge").textContent = `Remaining: ${remainingMatches}`;
+      renderProbabilities(sim);
+      renderPointsRangePreview(matches);
+      renderStatusPanel(matches);
+      renderRemainingFixturesPanel(matches);
+      renderHeadToHeadPanel(matches);
+    }
+
+    function renderProbabilities(sim) {
+      const probabilitiesList = document.getElementById("probabilitiesList");
+      probabilitiesList.innerHTML = "";
+      const sortedTeams = teams.map(team => ({
+        name: team.name,
+        lower: sim.probabilities[team.name].lowerProbability,
+        upper: sim.probabilities[team.name].upperProbability,
+        titles: sim.probabilities[team.name].titles,
+        possibleTieTitles: sim.probabilities[team.name].possibleTieTitles
+      })).sort((a, b) => b.lower - a.lower || b.upper - a.upper);
+
+      const topLower = sortedTeams.length ? sortedTeams[0].lower : 0;
+      for (const team of sortedTeams) {
+        const row = document.createElement("div");
+        row.className = "prob-row";
+        row.innerHTML = `
+          <div class="prob-left">
+            <div class="prob-team-line">
+              <span class="prob-team" style="color:${teamColors[team.name]}">${team.name}</span>
+              ${team.lower === topLower && topLower > 0 ? '<span class="crown-badge">Top confirmed</span>' : ''}
+            </div>
+            <span class="prob-titles">confirmed ${team.titles.toLocaleString()} | unresolved upside ${team.possibleTieTitles.toLocaleString()}</span>
+          </div>
+          <div class="prob-bar"><div class="prob-bar-fill" style="width:${team.upper.toFixed(2)}%"></div></div>
+          <div class="prob-right mono">${team.lower.toFixed(2)}% - ${team.upper.toFixed(2)}%</div>`;
+        probabilitiesList.appendChild(row);
+      }
+    }
+
+    function renderPointsRangePreview(matches) {
+      const tbody = document.querySelector("#pointsRangeTable tbody");
+      tbody.innerHTML = "";
+      const ranges = getPointsRange(teams, matches);
+      const currentMax = Math.max(...ranges.map(team => team.current));
+      const currentLeaders = ranges.filter(team => team.current === currentMax).map(team => team.name);
+      const sortedRanges = [...ranges].sort((a, b) => b.current - a.current || a.name.localeCompare(b.name));
+      for (const row of sortedRanges) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td><div class="team-cell"><span class="team-dot" style="background:${teamColors[row.name]}"></span><span class="team-name-colored" style="color:${teamColors[row.name]}">${row.name}</span></div></td><td>${row.current}</td><td>${row.min}</td><td>${row.max}</td>`;
+        tbody.appendChild(tr);
+      }
+      document.getElementById("currentLeaderText").textContent = currentLeaders.length === 1 ? `Current leader: ${currentLeaders[0]}` : `Current leaders: ${currentLeaders.join(", ")}`;
+    }
+
+    function renderStatusPanel(matches) {
+      const statusList = document.getElementById("statusList");
+      statusList.innerHTML = "";
+      getTitleStatus(matches).sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
+        const label = item.status === "clinched" ? "Clinched title" : item.status === "eliminated" ? "Eliminated" : "Still alive";
+        const row = document.createElement("div");
+        row.className = "list-row";
+        row.innerHTML = `<span style="font-weight:700; color:${teamColors[item.name]}">${item.name}</span><span class="status-badge ${item.status}">${label}</span>`;
+        statusList.appendChild(row);
+      });
+    }
+
+    function renderRemainingFixturesPanel(matches) {
+      const list = document.getElementById("remainingFixturesList");
+      list.innerHTML = "";
+      const remaining = getRemainingFixturesPerTeam(matches);
+      Object.keys(remaining).sort((a, b) => a.localeCompare(b)).forEach(team => {
+        const row = document.createElement("div");
+        row.className = "list-row";
+        row.innerHTML = `<span style="font-weight:700; color:${teamColors[team]}">${team}</span><span>${remaining[team]} matches</span>`;
+        list.appendChild(row);
+      });
+    }
+
+    function renderHeadToHeadPanel(matches) {
+      const tbody = document.querySelector("#headToHeadTable tbody");
+      tbody.innerHTML = "";
+      getHeadToHeadSummary(matches).forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${item.pair}</td><td class="text-left">${item.regularText}</td><td class="text-left">${item.playoffText}</td><td class="text-left">${item.allText}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getStatusLabel(status) {
+      return status === "resolved" ? "Resolved" : status === "partial" ? "Partial" : "Need scores";
+    }
+
+    function buildStepsHtml(steps) {
+      return `<div class="criterion-steps">${steps.map(step => `
+        <div class="criterion-step">
+          <div class="criterion-title">${step.criterion}</div>
+          <div>${step.message}</div>
+          <div class="muted">${step.values.join(" | ")}</div>
+        </div>`).join("")}</div>`;
+    }
+
+    function renderTieBreakSection() {
+      renderActiveTopTiePanel();
+      renderTieBreakTable();
+      renderDoubleTieExplanations();
+      renderTripleTieExplanations();
+    }
+
+    function renderActiveTopTiePanel() {
+      const container = document.getElementById("activeTopTiePanel");
+      container.innerHTML = "";
+      const matches = getAllMatches();
+      const currentPoints = getCurrentPoints(teams, matches);
+      const leaders = getLeaders(currentPoints);
+
+      if (leaders.length === 1) {
+        container.innerHTML = `<div class="active-tie-box"><div class="hero" style="font-size:16px; margin-bottom:6px;">${leaders[0]} leads outright</div><div class="sub">Δεν υπάρχει τρέχουσα ισοβαθμία στην κορυφή. Το tie-break engine θα ενεργοποιηθεί μόνο αν δύο ή περισσότερες ομάδες τερματίσουν μαζί στην κορυφή κάποιου σεναρίου.</div></div>`;
+        return;
+      }
+
+      const resolution = resolveTieGroup(leaders, matches);
+      const statsSummary = leaders.map(team => `<div class="tie-status-row"><span style="font-weight:700; color:${teamColors[team]}">${team}</span><span>${formatCriterionValue(team, resolution.stats[team])}</span></div>`).join("");
+      container.innerHTML = `
+        <div class="active-tie-box">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div>
+              <div class="hero" style="font-size:16px; margin-bottom:4px;">Current top tie: ${leaders.join(" / ")}</div>
+              <div class="sub">Main deciding criterion right now: <strong>${resolution.decisiveCriterion || "not yet separated"}</strong></div>
+            </div>
+            <span class="status-chip ${resolution.status}">${getStatusLabel(resolution.status)}</span>
+          </div>
+          <div class="criteria-inline">
+            ${TIEBREAK_CRITERIA.map(c => `<span class="criteria-pill">${c.label}</span>`).join("")}
+          </div>
+          <div style="margin-top:10px;">${statsSummary}</div>
+          ${buildStepsHtml(resolution.steps)}
+        </div>`;
+    }
+
+    function renderTieBreakTable() {
+      const tbody = document.querySelector("#tieBreakTable tbody");
+      tbody.innerHTML = "";
+      const allTeamNames = teams.map(t => t.name);
+      const resolution = resolveTieGroup(allTeamNames, getAllMatches());
+      resolution.ordered.forEach((teamName, index) => {
+        const row = resolution.stats[teamName];
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td><div class="team-cell"><span class="team-dot" style="background:${teamColors[teamName]}"></span><span class="team-name-colored" style="color:${teamColors[teamName]}">${teamName}</span>${index === 0 ? '<span class="criteria-badge">Reference top</span>' : ''}</div></td>
+          <td>${row.pts}</td>
+          <td>${row.gf}</td>
+          <td>${row.ga}</td>
+          <td>${row.gd}</td>
+          <td>${row.regPos}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDoubleTieExplanations() {
+      const container = document.getElementById("doubleTieExplanations");
+      container.innerHTML = "";
+      const pairs = [["AEK", "OSFP"], ["AEK", "PAOK"], ["AEK", "PAO"], ["OSFP", "PAOK"], ["OSFP", "PAO"], ["PAOK", "PAO"]];
+      pairs.forEach(group => {
+        const info = resolveTieGroup(group, getAllMatches());
+        const item = document.createElement("div");
+        item.className = "explain-item";
+        const orderedText = info.ordered.map((team, i) => `<div><span style="color:${teamColors[team]}; font-weight:700;">${i + 1}. ${team}</span> <span class="muted">${formatCriterionValue(team, info.stats[team])}</span></div>`).join("");
+        item.innerHTML = `
+          <details>
+            <summary class="collapse-summary">
+              <span class="collapse-left"><span class="collapse-arrow">▶</span><span>If ${group.join(" and ")} finish level</span></span>
+              <span class="status-chip ${info.status}">${getStatusLabel(info.status)}</span>
+            </summary>
+            <div class="collapse-content">
+              <div class="muted">Decisive criterion: <strong>${info.decisiveCriterion || "not yet available"}</strong></div>
+              <div style="margin-top:8px;">${orderedText}</div>
+              ${buildStepsHtml(info.steps)}
+            </div>
+          </details>`;
+        container.appendChild(item);
+      });
+    }
+
+    function renderTripleTieExplanations() {
+      const container = document.getElementById("tripleTieExplanations");
+      container.innerHTML = "";
+      const triples = [["AEK", "OSFP", "PAOK"], ["AEK", "OSFP", "PAO"], ["AEK", "PAOK", "PAO"], ["OSFP", "PAOK", "PAO"]];
+      triples.forEach(group => {
+        const info = resolveTieGroup(group, getAllMatches());
+        const item = document.createElement("div");
+        item.className = "explain-item";
+        const orderedText = info.ordered.map((team, i) => `<div><span style="color:${teamColors[team]}; font-weight:700;">${i + 1}. ${team}</span><div class="muted">${formatCriterionValue(team, info.stats[team])}</div></div>`).join("");
+        item.innerHTML = `
+          <details>
+            <summary class="collapse-summary">
+              <span class="collapse-left"><span class="collapse-arrow">▶</span><span>If ${group.join(", ")} finish level</span></span>
+              <span class="status-chip ${info.status}">${getStatusLabel(info.status)}</span>
+            </summary>
+            <div class="collapse-content">
+              <div class="muted">Main deciding criterion: <strong>${info.decisiveCriterion || "not yet available"}</strong></div>
+              <div style="margin-top:8px;">${orderedText}</div>
+              ${buildStepsHtml(info.steps)}
+            </div>
+          </details>`;
+        container.appendChild(item);
+      });
+    }
+
+    function resetAllResults() {
+      for (const matchday of matchdays) {
+        for (const match of matchday.matches) {
+          match.result = null;
+          match.score = "";
+        }
+      }
+      updateAll();
+    }
+
+    function fillAllAsDraws() {
+      for (const matchday of matchdays) {
+        for (const match of matchday.matches) {
+          if (!["1", "X", "2"].includes(match.result)) {
+            match.result = "X";
+            match.score = "1-1";
+          }
+        }
+      }
+      updateAll();
+    }
+
+    function exportPdf() { window.print(); }
+
+    function updateAll() {
+      renderTeamsTable();
+      renderMatchdays();
+      renderSummary();
+      renderTieBreakSection();
+    }
+
+    document.getElementById("resetBtn").addEventListener("click", resetAllResults);
+    document.getElementById("fillDrawsBtn").addEventListener("click", fillAllAsDraws);
+    document.getElementById("exportPdfBtn").addEventListener("click", exportPdf);
+
+    updateAll();
+
+  </script>
+</body>
+</html>
